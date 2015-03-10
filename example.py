@@ -10,8 +10,7 @@ images=soup.select("img")
 
 links = [i['src'] for i in images]
 n=0
-for l in links:
-	urllib.urlretrieve("l","image %d") % n
+for l in links[1:]:
+	urllib.urlretrieve(l,"image"+str(n)+".jpg")
 	n=n+1
 	print "Downloaded %d images" % n
-
