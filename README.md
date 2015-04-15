@@ -1,2 +1,4 @@
 # scraper
-This is the experimental ground for us to learn scraping in Python. Feel free to fork!
+This is just a basic python script to download images directly.
+run example.py in your terminal/command prompt.
+images will automatically downloaded.
