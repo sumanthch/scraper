@@ -1,0 +1,14 @@
+import urllib
+import re
+
+companies = ["AAPL","GOOG","MSFT"]
+i = 0
+while i < len(companies):
+	url = "http://finance.yahoo.com/q?s="+companies[i]
+	data = urllib.urlopen(url)
+	text = data.read()
+	regex = '<span id="yfs_l84_'+companies[i]+'">(.+?)</span>'
+	pattern = re.compile(regex)
+	stock_data = re.findall(pattern, text)
+	print stock_data
+	i+=1
