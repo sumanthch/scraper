@@ -1,0 +1,92 @@
+#!/usr/bin/python2.7
+
+import re, mechanize, urllib, subprocess
+
+class BrowserLecture:
+
+    sign_in_url = "https://novoed.com/users/sign_in/"
+    course_home_template = "https://novoed.com/%s/lectures/"
+
+    def __init__(self, course_name):
+        self.urls = []
+        self.mp4_links = set()
+
+        self.course_home = self.course_home_template % (course_name,)
+        
+        self.br = mechanize.Browser()
+        self.br.set_handle_robots(False)   # ignore robots
+        self.br.set_handle_refresh(False)  # can sometimes hang without this
+        self.br.addheaders = [('User-agent', 'Firefox')]
+
+        self.current_lecture_url = None
+
+    def sign_in(self, email, password):
+        response = self.br.open(self.sign_in_url)
+
+        self.br.form = list(self.br.forms())[0]
+
+        self.br["user[email]"] = email
+        self.br["user[password]"] = password
+
+        response = self.br.submit()
+
+    def choose_lecture(self):
+        links = self.lecture_links()
+
+        if not links:
+            print "No lectures were found on this page."
+            return 0
+        else:
+            for link in links:
+                print link.text
+            lecture_number_input = raw_input("Which lecture would you like? (enter the number): ")
+            try:
+                lecture_choice = int(lecture_number_input) - 1
+            except:
+                print "Sorry, that was not a valid integer."
+            else:
+                self.current_lecture_url = links[lecture_choice].url
+
+    def lecture_links(self):
+        self.br.open(self.course_home)
+
+        lecture_link_regex = r'%s\d+$' % (re.escape(self.course_home),)
+
+        return [link for link in self.br.links(url_regex=lecture_link_regex)]
+
+    def download_lecture(self):
+        self.br.open(self.current_lecture_url)
+
+        video_links = self.br.links(url_regex=r'.*\.mp4')
+
+        print video_links
+
+        for link in video_links:
+            mp4_filename = link.split('/')[-1]
+            mp4_name = re.sub('\.mp4$', '', mp4_filename)
+
+            urllib.urlretrieve(link, mp4_filename)
+
+            # sudo apt-get install libav-tools libavcodec-extra-53
+            bash_command = "ffmpeg -i %s -vn -ac 2 -ab 96k -y -f mp3 /vagrant/%s.mp3" % (mp4_filename, mp4_name)
+            subprocess.Popen(["bash", "-c", bash_command])
+
+def main():
+    print "This script is used to rip audio from video lectures."
+    print "At this point it is only applicable to novoed."
+
+    course_name = raw_input("What is the course name url? (eg, for 'https://novoed.com/finance13/lectures/' it would be finance13: ")
+
+    course = BrowserLecture(course_name.strip())
+
+    email = raw_input('What is your email?: ')
+    password = raw_input('Password?: ')
+    
+    course.sign_in(email, password)
+
+    course.choose_lecture()
+
+    course.download_lecture()
+
+if __name__ == "__main__":
+  main()
